@@ -23,7 +23,7 @@ export const useCart = create(
       }
 
       set({ items: [...currentItems, data] });
-      toast.success("Item added to cart", { icon: "🛒" });
+      toast.success("Item added to cart");
     },
     removeItem: (id: string) => {
       const currentItems = get().items;
