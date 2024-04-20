@@ -1,8 +1,8 @@
 "use client";
 
 import axios from "axios";
-import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 
 import Button from "@/components/ui/button";
@@ -14,25 +14,34 @@ const Summary = () => {
   const items = useCart((state) => state.items);
   const clearItems = useCart((state) => state.clearItems);
 
+  const [loading, setLoading] = useState(false);
+
   const totalPrice = items.reduce((acc, item) => acc + Number(item.price), 0);
 
-  useEffect(() => {
-    if (searchParams.get("success")) {
-      toast.success("Order placed successfully");
-      clearItems();
-    }
+  const hasRun = useRef(false);
 
-    if (searchParams.get("canceled")) {
-      toast.error("Order canceled");
+  useEffect(() => {
+    if (!hasRun.current  && searchParams.get("reference") && searchParams.get("trxref")) {
+      toast.success("Payment Completed!");
+      clearItems();
+      hasRun.current = true;
     }
   }, [searchParams, clearItems])
 
   const onCheckout = async () => {
-    const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/checkout`, {
-      productIds: items.map((item) => item.id),
-    });
+    try {
+      setLoading(true);
 
-    window.location = response.data.url;
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/checkout`, {
+        productIds: items.map((item) => item.id),
+      });
+  
+      window.location = response.data.url;
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return(
@@ -48,7 +57,7 @@ const Summary = () => {
           <Currency value={totalPrice} />
         </div>
       </div>
-      <Button onClick={onCheckout} className="mt-6 w-full">Proceed to checkout</Button>
+      <Button onClick={onCheckout} disabled={loading} className="mt-6 w-full">Proceed to checkout</Button>
     </div>
   )
 };
